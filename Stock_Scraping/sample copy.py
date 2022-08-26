@@ -1,0 +1,152 @@
+import bs4
+import traceback
+import re
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+ 
+# ドライバーのフルパス
+CHROMEDRIVER = "./driver/chromedriver"
+# 改ページ（最大）
+PAGE_MAX = 6
+# 遷移間隔（秒）
+INTERVAL_TIME = 1
+ 
+# ドライバー準備
+def get_driver():
+    # ヘッドレスモードでブラウザを起動
+    options = Options()
+    options.add_argument('--headless')
+ 
+    # ブラウザーを起動
+    driver = webdriver.Chrome(CHROMEDRIVER, options=options)
+ 
+    return driver
+ 
+ 
+# 対象ページのソース取得
+def get_source_from_page(driver, page):
+    try:
+        # ターゲット
+        driver.get(page)
+        driver.implicitly_wait(10)  # 見つからないときは、10秒まで待つ
+        page_source = driver.page_source
+ 
+        return page_source
+ 
+    except Exception as e:
+ 
+        print("Exception\n" + traceback.format_exc())
+ 
+        return None
+ 
+ 
+# ソースからスクレイピングする
+def get_data_from_source(src):
+    # スクレイピングする
+    soup = bs4.BeautifulSoup(src, features='html.parser')
+    # print(soup)
+    try:
+        info = []
+        table = soup.find("table", class_="md-l-table-01 md-l-utl-mt10")
+ 
+        if table:
+            elems = table.find("tr")
+            if elems:
+                td_tag = elems.find("th",class_="vaM alC")
+                print(td_tag.strings)
+                #if td_tag:
+                #    a_tag = elem.find("a")
+ #
+                #    if a_tag:
+                #        href = a_tag.attrs['href']
+                #        match = re.findall("\/stocks\/detail\/\?code=(.*)$", href)
+ #
+                #        if len(match) > 0:
+                #            item_id = match[0]
+                #            info.append(item_id)
+ 
+        return info
+ 
+    except Exception as e:
+ 
+        print("Exception\n" + traceback.format_exc())
+ 
+        return None
+ 
+ 
+# 次のページへ遷移
+def next_btn_click(driver):
+    try:
+        # 次へボタン
+        elem_btn = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, 'listNext'))
+        )
+ 
+        # クリック処理
+        actions = ActionChains(driver)
+        actions.move_to_element(elem_btn)
+        actions.click(elem_btn)
+        actions.perform()
+ 
+        # 間隔を設ける(秒単位）
+        time.sleep(INTERVAL_TIME)
+ 
+        return True
+ 
+    except Exception as e:
+ 
+        print("Exception\n" + traceback.format_exc())
+ 
+        return False
+ 
+ 
+if __name__ == "__main__":
+    # 対象ページURL
+    page = "https://search.sbisec.co.jp/v2/popwin/info/stock/pop6040_usequity_list.html"
+ 
+    # ブラウザのdriver取得
+    driver = get_driver()
+ 
+    # ページのソース取得
+    source = get_source_from_page(driver, page)
+    result_flg = True
+ 
+    # ページカウンター制御の初期化
+    page_counter = 0
+ 
+    #Stock_id = []
+    #Stock_name_us = []
+    #Stock_name =[]
+    #note = []
+    #table = driver.find_element_by_tag_name('tbody')
+    #elems = table.find_elements_by_tag_name('tr')
+    #for elem in elems:
+        #Stock_id = elem.find_element_by_css_selector('th').text
+        #Stock_name_us = elem.find_element_by_css_selector('td:nth-child(2)').text
+        #Stock_name = elem.find_element_by_css_selector('td:nth-child(2) > br').text
+        #note = elem.find_element_by_css_selector('td:nth-child(3)').text
+    #print(Stock_id)
+    #while result_flg:
+    #    page_counter = page_counter + 1
+ #
+    #    # ソースからデータ抽出
+    data = get_data_from_source(source)
+ #
+    #    # データ保存
+    #    print(data)
+ #
+    #    # 改ページ処理を抜ける
+    #    if page_counter == PAGE_MAX:
+    #        break
+ #
+    #    # 改ページ処理
+    #    result_flg = next_btn_click(driver)
+    #    source = driver.page_source
+ 
+    # 閉じる
+    driver.quit()
